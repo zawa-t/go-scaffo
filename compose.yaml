@@ -1,0 +1,13 @@
+services:
+  scaffo:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: scaffo-img
+    container_name: scaffo
+    volumes:
+      - .:/go/src
+    env_file:
+      - ./.env
+    tty: true
+    stdin_open: true
