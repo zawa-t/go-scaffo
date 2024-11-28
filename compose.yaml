@@ -1,10 +1,10 @@
 services:
-  scaffo:
+  go-scaffo:
     build:
       context: ./
       dockerfile: Dockerfile
-    image: scaffo-img
-    container_name: scaffo
+    image: go-scaffo-img
+    container_name: go-scaffo
     volumes:
       - .:/go/src
     env_file:

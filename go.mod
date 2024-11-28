@@ -1,4 +1,4 @@
-module github.com/zawa-t/scaffo
+module github.com/zawa-t/go-scaffo
 
 go 1.22.8
 

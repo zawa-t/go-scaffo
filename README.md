@@ -1,1 +1,1 @@
-# scaffo
+# go-scaffo
