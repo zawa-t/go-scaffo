@@ -6,7 +6,7 @@ services:
     image: go-scaffo-img
     container_name: go-scaffo
     volumes:
-      - .:/go/src
+      - .:/go/app
     env_file:
       - ./.env
     tty: true

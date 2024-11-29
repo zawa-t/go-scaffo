@@ -6,15 +6,16 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/zawa-t/go-scaffo/src/generate"
 )
 
 // generateCmd represents the generate command
 var generateCmd = &cobra.Command{
-	Use:   "generate [name]",
-	Short: "Generate a new application scaffold",
+	Use:     "generate [name]", // メインコマンド名
+	Aliases: []string{"g"},     // エイリアスの定義
+	Short:   "Generate a new application scaffold",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
@@ -24,7 +25,7 @@ to quickly create a Cobra application.`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		appName := args[0]
-		if err := generateScaffold(appName); err != nil {
+		if err := generate.Scaffold(appName); err != nil {
 			fmt.Println("Error:", err)
 			os.Exit(1)
 		}
@@ -45,42 +46,3 @@ func init() {
 	// is called directly, e.g.:
 	// generateCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
-
-func generateScaffold(appName string) error {
-	basePath := filepath.Join(".", appName)
-	dirs := []string{
-		filepath.Join(basePath, "cmd"),
-		filepath.Join(basePath, "pkg"),
-		filepath.Join(basePath, "internal"),
-		filepath.Join(basePath, "configs"),
-	}
-
-	files := map[string]string{
-		filepath.Join(basePath, "main.go"): mainTemplate,
-	}
-
-	// Create directories
-	for _, dir := range dirs {
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return err
-		}
-	}
-
-	// Create files
-	for path, content := range files {
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-const mainTemplate = `package main
-
-import "fmt"
-
-func main() {
-    fmt.Println("Hello, {{ .AppName }}!")
-}
-`
