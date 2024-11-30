@@ -1,7 +1,7 @@
 package dependency
 
 import (
-	"{{ .BaseImportPath }}/internal/infrastructure"
+	"{{ .BaseImportPath }}/internal/infrastructure/inmemory"
 	"{{ .BaseImportPath }}/internal/presentation/handler"
 	"{{ .BaseImportPath }}/internal/usecase"
 )
@@ -30,6 +30,6 @@ func (i *Injection) newUserUsecase() *usecase.UserUsecase {
 	return usecase.NewUserUsecase(i.newInMemoryUserRepository())
 }
 
-func (i *Injection) newInMemoryUserRepository() *infrastructure.InMemoryUserRepository {
-	return infrastructure.NewInMemoryUserRepository()
+func (i *Injection) newInMemoryUserRepository() *inmemory.UserRepository {
+	return inmemory.NewUserRepository()
 }

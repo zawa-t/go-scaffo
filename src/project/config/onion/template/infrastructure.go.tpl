@@ -1,4 +1,4 @@
-package infrastructure
+package inmemory
 
 import (
 	"errors"
@@ -6,19 +6,19 @@ import (
 	"{{ .BaseImportPath }}/internal/domain/user"
 )
 
-type InMemoryUserRepository struct {
+type UserRepository struct {
 	users  map[int]user.User
 	nextID int
 }
 
-func NewInMemoryUserRepository() *InMemoryUserRepository {
-	return &InMemoryUserRepository{
+func NewUserRepository() *UserRepository {
+	return &UserRepository{
 		users:  make(map[int]user.User),
 		nextID: 1,
 	}
 }
 
-func (r *InMemoryUserRepository) FindBy(id int) (*user.User, error) {
+func (r *UserRepository) FindBy(id int) (*user.User, error) {
 	user, exists := r.users[id]
 	if !exists {
 		return nil, errors.New("user not found")
@@ -26,7 +26,7 @@ func (r *InMemoryUserRepository) FindBy(id int) (*user.User, error) {
 	return &user, nil
 }
 
-func (r *InMemoryUserRepository) Save(user user.User) error {
+func (r *UserRepository) Save(user user.User) error {
 	user.ID = r.nextID
 	r.nextID++
 	r.users[user.ID] = user
