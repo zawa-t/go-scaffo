@@ -1,22 +1,22 @@
 package service
 
 import (
-	"{{ .ModuleName }}/{{ .AppName }}/internal/domain/user"
+	"{{ .BaseImportPath }}/internal/domain/user"
 )
 
 type UserCreate interface {
 	Create(name string) error
 }
 
-type userCreateService struct {
+type UserCreateService struct {
 	userRepository user.UserRepository
 }
 
-func NewUserCreateService(sr user.UserRepository) UserCreate {
-	return &userCreateService{sr}
+func NewUserCreateService(sr user.UserRepository) *UserCreateService {
+	return &UserCreateService{sr}
 }
 
-func (s *userCreateService) Create(name string) error {
+func (s *UserCreateService) Create(name string) error {
 	user := user.User{
 		ID:   1,
 		Name: name,

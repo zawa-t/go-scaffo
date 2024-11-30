@@ -9,5 +9,7 @@ services:
       - .:/go/app
     env_file:
       - ./.env
+    ports:
+      - '8100:8100'
     tty: true
     stdin_open: true

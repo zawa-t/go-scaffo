@@ -116,12 +116,19 @@ func (p *Project) makeFileAll(tmplPath string, content config.Structure) error {
 			return err
 		}
 
+		var baseImportPath string
+		if p.appName != "" {
+			baseImportPath = fmt.Sprintf("%s/%s", moduleName, p.appName)
+		} else {
+			baseImportPath = moduleName
+		}
+
 		data := struct {
-			AppName    string
-			ModuleName string
+			AppName        string
+			BaseImportPath string
 		}{
-			AppName:    p.appName,
-			ModuleName: moduleName,
+			AppName:        p.appName,
+			BaseImportPath: baseImportPath,
 		}
 
 		if err := tmpl.Execute(file, data); err != nil {

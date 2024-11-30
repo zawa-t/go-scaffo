@@ -1,21 +1,21 @@
 package service
 
 import (
-	"{{ .ModuleName }}/{{ .AppName }}/internal/domain/user"
+	"{{ .BaseImportPath }}/internal/domain/user"
 )
 
 type UserFind interface {
 	Find(id int) (*user.User, error)
 }
 
-type userFindService struct {
+type UserFindService struct {
 	userRepository user.UserRepository
 }
 
-func NewUserFindUsecase(sr user.UserRepository) UserFind {
-	return &userFindService{sr}
+func NewUserFindService(sr user.UserRepository) *UserFindService {
+	return &UserFindService{sr}
 }
 
-func (s *userFindService) Find(id int) (*user.User, error) {
+func (s *UserFindService) Find(id int) (*user.User, error) {
 	return s.userRepository.FindBy(id)
 }

@@ -12,8 +12,9 @@ func LoadConfiguration(basePath string, appName string) *config.Configuration {
 	return &config.Configuration{
 		TemplatePath: templatePath,
 		Contents: config.Contents{
-			{Dir: filepath.Join(basePath, "cmd", appName), Files: map[string]string{"main.go": "main.go.tpl"}},
-			{Dir: filepath.Join(basePath, "internal", "handler"), Files: map[string]string{"user_handler.go": "handler.go.tpl"}},
+			{Dir: filepath.Join(basePath, "cmd", "server"), Files: map[string]string{"main.go": "main.go.tpl"}},
+			{Dir: filepath.Join(basePath, "internal", "presentation"), Files: map[string]string{"rooter.go": "rooter.go.tpl"}},
+			{Dir: filepath.Join(basePath, "internal", "presentation", "handler"), Files: map[string]string{"user_handler.go": "handler.go.tpl"}},
 			{Dir: filepath.Join(basePath, "internal", "usecase"), Files: map[string]string{"user_usecase.go": "usecase.go.tpl"}},
 			{Dir: filepath.Join(basePath, "internal", "usecase", "service"), Files: map[string]string{"user_create_service.go": "user_create_service.go.tpl", "user_find_service.go": "user_find_service.go.tpl"}},
 			{Dir: filepath.Join(basePath, "internal", "domain", "user"), Files: map[string]string{"user.go": "domain.go.tpl", "user_repository.go": "domain_repository.go.tpl"}},

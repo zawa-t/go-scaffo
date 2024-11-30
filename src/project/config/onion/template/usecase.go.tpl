@@ -1,7 +1,8 @@
 package usecase
 
 import (
-	"{{ .ModuleName }}/{{ .AppName }}/internal/usecase/service"
+	"{{ .BaseImportPath }}/internal/domain/user"
+	"{{ .BaseImportPath }}/internal/usecase/service"
 )
 
 type UserUsecase struct {
@@ -9,6 +10,6 @@ type UserUsecase struct {
 	service.UserFind
 }
 
-func NewUserUsecase(uc service.UserCreate, uf service.UserFind) UserUsecase {
-	return UserUsecase{uc, uf}
+func NewUserUsecase(sr user.UserRepository) *UserUsecase {
+	return &UserUsecase{service.NewUserCreateService(sr), service.NewUserFindService(sr)}
 }

@@ -3,22 +3,22 @@ package infrastructure
 import (
 	"errors"
 
-	"{{ .ModuleName }}/{{ .AppName }}/internal/domain/user"
+	"{{ .BaseImportPath }}/internal/domain/user"
 )
 
-type inMemoryUserRepository struct {
+type InMemoryUserRepository struct {
 	users  map[int]user.User
 	nextID int
 }
 
-func NewInMemoryUserRepository() user.UserRepository {
-	return &inMemoryUserRepository{
+func NewInMemoryUserRepository() *InMemoryUserRepository {
+	return &InMemoryUserRepository{
 		users:  make(map[int]user.User),
 		nextID: 1,
 	}
 }
 
-func (r *inMemoryUserRepository) FindBy(id int) (*user.User, error) {
+func (r *InMemoryUserRepository) FindBy(id int) (*user.User, error) {
 	user, exists := r.users[id]
 	if !exists {
 		return nil, errors.New("user not found")
@@ -26,7 +26,7 @@ func (r *inMemoryUserRepository) FindBy(id int) (*user.User, error) {
 	return &user, nil
 }
 
-func (r *inMemoryUserRepository) Save(user user.User) error {
+func (r *InMemoryUserRepository) Save(user user.User) error {
 	user.ID = r.nextID
 	r.nextID++
 	r.users[user.ID] = user
