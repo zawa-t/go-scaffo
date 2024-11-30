@@ -10,6 +10,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/zawa-t/go-scaffo/src/project/config"
+	"github.com/zawa-t/go-scaffo/src/project/config/onion"
 )
 
 var (
@@ -23,17 +26,17 @@ type root struct {
 }
 
 type Project struct {
-	AppName string
+	appName string
 	root    root
 }
 
 func New(appName, pjtRootMarker string) (*Project, error) {
-	rootDir, err := findProjectRootDir(pjtRootMarker) // MEMO: go.mod ファイルがある場所をそのプロジェクトの root ディレクトリと定義
+	rootDir, err := findProjectRootDir(pjtRootMarker)
 	if err != nil {
 		return nil, err
 	}
 	return &Project{
-		AppName: appName,
+		appName: appName,
 		root: root{
 			dir:    rootDir,
 			marker: pjtRootMarker,
@@ -41,23 +44,32 @@ func New(appName, pjtRootMarker string) (*Project, error) {
 	}, nil
 }
 
-func getModuleName(gomod io.Reader) (string, error) {
-	scanner := bufio.NewScanner(gomod)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "module ") {
-			return strings.TrimSpace(strings.TrimPrefix(line, "module ")), nil
+func (p *Project) AddConfiguration(archName string) error {
+	basePath, err := p.basePath()
+	if err != nil {
+		return err
+	}
+
+	var configuration *config.Configuration
+	switch archName {
+	default:
+		configuration = onion.LoadConfiguration(basePath, p.appName)
+	}
+
+	for _, content := range configuration.Contents {
+		if err := os.MkdirAll(content.Dir, os.ModePerm); err != nil {
+			return err
+		}
+		if err := p.makeFileAll(configuration.TemplatePath, content); err != nil {
+			return err
 		}
 	}
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-	return "", errors.New("module name not found in go.mod")
+	return nil
 }
 
-func (p *Project) BasePath() (basePath string, err error) {
-	if p.AppName != "" {
-		basePath = filepath.Join(p.root.dir, p.AppName)
+func (p *Project) basePath() (basePath string, err error) {
+	if p.appName != "" {
+		basePath = filepath.Join(p.root.dir, p.appName)
 		err := os.MkdirAll(basePath, os.ModePerm)
 		if err != nil {
 			return "", err
@@ -86,9 +98,9 @@ func (p *Project) moduleName() (string, error) {
 	return moduleName, nil
 }
 
-func (p *Project) MakeFileAll(tmplPath, dir string, files map[string]string) error {
-	for filePath, tmplFile := range files {
-		file, err := os.Create(filepath.Join(dir, filePath))
+func (p *Project) makeFileAll(tmplPath string, content config.Structure) error {
+	for filePath, tmplFile := range content.Files {
+		file, err := os.Create(filepath.Join(content.Dir, filePath))
 		if err != nil {
 			return err
 		}
@@ -104,13 +116,11 @@ func (p *Project) MakeFileAll(tmplPath, dir string, files map[string]string) err
 			return err
 		}
 
-		type Data struct {
+		data := struct {
 			AppName    string
 			ModuleName string
-		}
-
-		data := Data{
-			AppName:    p.AppName,
+		}{
+			AppName:    p.appName,
 			ModuleName: moduleName,
 		}
 
@@ -119,6 +129,20 @@ func (p *Project) MakeFileAll(tmplPath, dir string, files map[string]string) err
 		}
 	}
 	return nil
+}
+
+func getModuleName(gomod io.Reader) (string, error) {
+	scanner := bufio.NewScanner(gomod)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "module ") {
+			return strings.TrimSpace(strings.TrimPrefix(line, "module ")), nil
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+	return "", errors.New("module name not found in go.mod")
 }
 
 func findProjectRootDir(pjtRootMarker string) (string, error) {
