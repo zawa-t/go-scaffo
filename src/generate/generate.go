@@ -1,64 +1,34 @@
 package generate
 
 import (
-	"embed"
-	"html/template"
 	"os"
-	"path/filepath"
-)
 
-var (
-	//go:embed template/*
-	templates embed.FS
+	"github.com/zawa-t/go-scaffo/src/project"
+	"github.com/zawa-t/go-scaffo/src/project/config/onion"
 )
 
 func Scaffold(appName string) error {
-	basePath := "."
-	if appName != "" {
-		basePath = filepath.Join(basePath, appName)
-		err := os.MkdirAll(basePath, os.ModePerm)
-		if err != nil {
-			return err
-		}
+	goModFile := "go.mod"
+	pjt, err := project.New(appName, goModFile)
+	if err != nil {
+		return err
 	}
 
-	dirs := map[string]map[string]string{
-		filepath.Join(basePath, "cmd", appName):                     {"main.go": "main.go.tpl"},
-		filepath.Join(basePath, "internal", "handler"):              {"sample_handler.go": "handler.go.tpl"},
-		filepath.Join(basePath, "internal", "usecase"):              {"sample_usecase.go": "usecase.go.tpl"},
-		filepath.Join(basePath, "internal", "domain"):               {"sample.go": "domain.go.tpl", "sample_repository.go": "domain_repository.go.tpl"},
-		filepath.Join(basePath, "internal", "infrastructure"):       {"sample_repository.go": "infrastructure.go.tpl"},
-		filepath.Join(basePath, "internal", "infrastructure", "db"): {"db.go": "db.go.tpl"},
-		filepath.Join(basePath, "pkg", "logger"):                    {"logger.go": "logger.go.tpl"},
+	basePath, err := pjt.BasePath()
+	if err != nil {
+		return err
 	}
 
-	for dir, files := range dirs {
-		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+	tmplPath := "config/onion/template"
+
+	configurations := onion.LoadConfigurations("onion", basePath, pjt.AppName)
+	for _, configuration := range configurations {
+		if err := os.MkdirAll(configuration.Dir, os.ModePerm); err != nil {
 			return err
 		}
 
-		for filePath, tmplFile := range files {
-			file, err := os.Create(filepath.Join(dir, filePath))
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-
-			// tmpl, err := template.ParseFiles(tmplPath)
-			tmpl, err := template.ParseFS(templates, filepath.Join("template", tmplFile))
-			if err != nil {
-				return err
-			}
-
-			type Data struct {
-				AppName string
-			}
-
-			data := Data{AppName: appName}
-
-			if err := tmpl.Execute(file, data); err != nil {
-				return err
-			}
+		if err := pjt.MakeFileAll(tmplPath, configuration.Dir, configuration.Files); err != nil {
+			return err
 		}
 	}
 	return nil
