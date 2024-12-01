@@ -11,6 +11,8 @@ import (
 	"github.com/zawa-t/go-scaffo/src/generate"
 )
 
+var arch string
+
 // generateCmd represents the generate command
 var generateCmd = &cobra.Command{
 	Use:     "generate [name]", // メインコマンド名
@@ -24,17 +26,22 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		appName := args[0]
-		if err := generate.Scaffold(appName); err != nil {
+		arg := generate.Arg{
+			AppName:  args[0],
+			ArchName: arch,
+		}
+		if err := generate.Scaffold(arg); err != nil {
 			fmt.Println("Error:", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Application scaffold '%s' created successfully!\n", appName)
+		fmt.Printf("Application scaffold '%s' created successfully!\n", arg.AppName)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(generateCmd)
+
+	generateCmd.Flags().StringVar(&arch, "arch", "", "Specify architecture name")
 
 	// Here you will define your flags and configuration settings.
 

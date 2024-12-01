@@ -4,14 +4,18 @@ import (
 	"github.com/zawa-t/go-scaffo/src/project"
 )
 
-func Scaffold(appName string) error {
-	goModFile := "go.mod"
-	pjt, err := project.New(appName, goModFile) // MEMO: go.mod ファイルがある場所をそのプロジェクトの root ディレクトリと定義
+type Arg struct {
+	AppName  string
+	ArchName string
+}
+
+func Scaffold(arg Arg) error {
+	pjt, err := project.New(arg.AppName, arg.ArchName)
 	if err != nil {
 		return err
 	}
 
-	if err := pjt.AddConfiguration("onion"); err != nil {
+	if err := pjt.AddConfiguration(); err != nil {
 		return err
 	}
 	return nil
