@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -80,7 +79,7 @@ func (p *Project) basePath() (basePath string, err error) {
 	return
 }
 
-func (p *Project) moduleName() (string, error) {
+func (p *Project) getModuleName() (string, error) {
 	if p.root.marker != "go.mod" {
 		return "", errors.New("プロジェクト指標がgo.modではありません")
 	}
@@ -91,11 +90,17 @@ func (p *Project) moduleName() (string, error) {
 	}
 	defer file.Close()
 
-	moduleName, err := getModuleName(file)
-	if err != nil {
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "module ") {
+			return strings.TrimSpace(strings.TrimPrefix(line, "module ")), nil
+		}
+	}
+	if err := scanner.Err(); err != nil {
 		return "", err
 	}
-	return moduleName, nil
+	return "", errors.New("module name not found in go.mod")
 }
 
 func (p *Project) makeFileAll(tmplPath string, content config.Structure) error {
@@ -111,7 +116,7 @@ func (p *Project) makeFileAll(tmplPath string, content config.Structure) error {
 			return err
 		}
 
-		moduleName, err := p.moduleName()
+		moduleName, err := p.getModuleName()
 		if err != nil {
 			return err
 		}
@@ -136,20 +141,6 @@ func (p *Project) makeFileAll(tmplPath string, content config.Structure) error {
 		}
 	}
 	return nil
-}
-
-func getModuleName(gomod io.Reader) (string, error) {
-	scanner := bufio.NewScanner(gomod)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "module ") {
-			return strings.TrimSpace(strings.TrimPrefix(line, "module ")), nil
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-	return "", errors.New("module name not found in go.mod")
 }
 
 func findProjectRootDir(pjtRootMarker string) (string, error) {
