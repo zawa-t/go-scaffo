@@ -5,12 +5,13 @@ import (
 )
 
 type Arg struct {
-	AppName  string
-	ArchName string
+	AppName     string
+	ArchName    string
+	CommandName string
 }
 
 func Scaffold(arg Arg) error {
-	pjt, err := project.New(arg.AppName, arg.ArchName)
+	pjt, err := project.New(arg.AppName, arg.ArchName, arg.CommandName)
 	if err != nil {
 		return err
 	}

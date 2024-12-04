@@ -2,32 +2,36 @@ package project
 
 import (
 	"bufio"
-	"embed"
 	"errors"
 	"fmt"
 
-	htmlTemplate "html/template"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/zawa-t/go-scaffo/src/template"
+	"github.com/zawa-t/go-scaffo/src/template/config"
 	"github.com/zawa-t/go-scaffo/src/template/config/cli"
 	"github.com/zawa-t/go-scaffo/src/template/config/onion"
 )
 
-type root struct {
-	dir        string
-	moduleName string
-}
-
 type Project struct {
-	root    root
-	appName string
-	loader  func(basePath string, appName string) *template.Config
+	root        string
+	moduleName  string
+	appName     string
+	commandName *string
+	arch        string
+	loadConfig  func(basePath, appName string) *config.Configuration
 }
 
-func New(appName, archName string) (*Project, error) {
+func New(appName, archName, commandName string) (*Project, error) {
+	if archName == "cli" && commandName == "" {
+		return nil, errors.New("CLI構成の場合、コマンド名は必須です")
+	}
+	if archName != "cli" && commandName != "" {
+		return nil, errors.New("CLI構成以外の場合、コマンド名は指定できません")
+	}
+
 	rootMarker := "go.mod"
 	rootDir, err := findProjectRootDir(rootMarker) // MEMO: go.mod ファイルがある場所をそのプロジェクトの root ディレクトリと定義
 	if err != nil {
@@ -37,19 +41,20 @@ func New(appName, archName string) (*Project, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	pjt := &Project{
-		root: root{
-			dir:        rootDir,
-			moduleName: moduleName,
-		},
-		appName: appName,
+		root:       rootDir,
+		moduleName: moduleName,
+		appName:    appName,
+		arch:       archName,
 	}
 
 	switch archName {
 	case "cli":
-		pjt.loader = cli.LoadConfiguration
+		pjt.commandName = &commandName
+		pjt.loadConfig = cli.LoadConfiguration
 	default:
-		pjt.loader = onion.LoadConfiguration
+		pjt.loadConfig = onion.LoadConfiguration
 	}
 
 	return pjt, nil
@@ -60,13 +65,12 @@ func (p *Project) AddConfiguration() error {
 	if err != nil {
 		return err
 	}
-
-	config := p.loader(basePath, p.appName)
+	config := p.loadConfig(basePath, p.appName)
 	for _, content := range config.Contents {
-		if err := os.MkdirAll(content.Dir, os.ModePerm); err != nil {
+		if err := createDirectory(content.Dir); err != nil {
 			return err
 		}
-		if err := p.makeFileAll(config.EmbededFiles, content); err != nil {
+		if err := p.makeFiles(content.Dir, content.Files, config.Template); err != nil {
 			return err
 		}
 	}
@@ -75,45 +79,47 @@ func (p *Project) AddConfiguration() error {
 
 func (p *Project) basePath() (basePath string, err error) {
 	if p.appName != "" {
-		basePath = filepath.Join(p.root.dir, p.appName)
+		basePath = filepath.Join(p.root, p.appName)
 		err := os.MkdirAll(basePath, os.ModePerm)
 		if err != nil {
 			return "", err
 		}
 	} else {
-		basePath = p.root.dir
+		basePath = p.root
 	}
 	return
 }
 
-func (p *Project) makeFileAll(embededTemplateFiles embed.FS, content template.Content) error {
-	for filePath, tmplFilePath := range content.Files {
-		file, err := os.Create(filepath.Join(content.Dir, filePath))
-		if err != nil {
+func (p *Project) makeFiles(dir string, files map[string]string, tmplConfig config.Template) error {
+	for fileName, tmplFileName := range files {
+		if err := func() error {
+			file, err := os.Create(filepath.Join(dir, fileName))
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+
+			tmpl, err := template.New(tmplConfig, tmplFileName)
+			if err != nil {
+				return err
+			}
+
+			data := template.NewData(p.moduleName, p.appName, p.commandName)
+			if err := tmpl.Execute(file, *data); err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
 			return err
 		}
-		defer file.Close()
+	}
+	return nil
+}
 
-		tmpl, err := htmlTemplate.ParseFS(embededTemplateFiles, tmplFilePath)
-		if err != nil {
-			return err
-		}
-
-		var baseImportPath string
-		if p.appName != "" {
-			baseImportPath = fmt.Sprintf("%s/%s", p.root.moduleName, p.appName)
-		} else {
-			baseImportPath = p.root.moduleName
-		}
-
-		data := template.Data{
-			AppName:        p.appName,
-			BaseImportPath: baseImportPath,
-		}
-
-		if err := tmpl.Execute(file, data); err != nil {
-			return err
-		}
+// createDirectory ensures the directory exists.
+func createDirectory(dir string) error {
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 	return nil
 }
