@@ -38,7 +38,7 @@ to quickly create a Cobra application.`,
 			fmt.Println("Error:", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Application scaffold '%s' created successfully!\n", arg.AppName)
+		fmt.Println("Application scaffold created successfully!")
 	},
 }
 

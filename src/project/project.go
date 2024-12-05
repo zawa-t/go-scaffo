@@ -48,9 +48,14 @@ func New(appName, archName, commandName string, loader Loader) (*Project, error)
 	pjt := &Project{
 		root:       rootDir,
 		moduleName: moduleName,
-		appName:    appName,
 		arch:       archName,
 		loader:     loader,
+	}
+
+	if appName == "." {
+		pjt.appName = ""
+	} else {
+		pjt.appName = appName
 	}
 
 	if archName == "cli" {
