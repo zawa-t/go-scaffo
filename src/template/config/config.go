@@ -11,8 +11,3 @@ type Template struct {
 	EmbededFiles embed.FS
 	Path         string
 }
-
-type Configuration struct {
-	Template Template
-	Contents []Content
-}

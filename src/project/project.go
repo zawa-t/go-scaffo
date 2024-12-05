@@ -11,8 +11,6 @@ import (
 
 	"github.com/zawa-t/go-scaffo/src/template"
 	"github.com/zawa-t/go-scaffo/src/template/config"
-	"github.com/zawa-t/go-scaffo/src/template/config/cli"
-	"github.com/zawa-t/go-scaffo/src/template/config/onion"
 )
 
 type Project struct {
@@ -21,10 +19,15 @@ type Project struct {
 	appName     string
 	commandName *string
 	arch        string
-	loadConfig  func(basePath, appName string) *config.Configuration
+	loader      Loader
 }
 
-func New(appName, archName, commandName string) (*Project, error) {
+type Loader interface {
+	LoadContents(basePath, appName string) []config.Content
+	LoadTemplateConfig() config.Template
+}
+
+func New(appName, archName, commandName string, loader Loader) (*Project, error) {
 	if archName == "cli" && commandName == "" {
 		return nil, errors.New("CLI構成の場合、コマンド名は必須です")
 	}
@@ -47,16 +50,12 @@ func New(appName, archName, commandName string) (*Project, error) {
 		moduleName: moduleName,
 		appName:    appName,
 		arch:       archName,
+		loader:     loader,
 	}
 
-	switch archName {
-	case "cli":
+	if archName == "cli" {
 		pjt.commandName = &commandName
-		pjt.loadConfig = cli.LoadConfiguration
-	default:
-		pjt.loadConfig = onion.LoadConfiguration
 	}
-
 	return pjt, nil
 }
 
@@ -65,12 +64,12 @@ func (p *Project) AddConfiguration() error {
 	if err != nil {
 		return err
 	}
-	config := p.loadConfig(basePath, p.appName)
-	for _, content := range config.Contents {
-		if err := createDirectory(content.Dir); err != nil {
-			return err
+	contents := p.loader.LoadContents(basePath, p.appName)
+	for _, content := range contents {
+		if err := os.MkdirAll(content.Dir, os.ModePerm); err != nil {
+			return fmt.Errorf("failed to create directory %s: %w", content.Dir, err)
 		}
-		if err := p.makeFiles(content.Dir, content.Files, config.Template); err != nil {
+		if err := p.makeFiles(content.Dir, content.Files); err != nil {
 			return err
 		}
 	}
@@ -90,7 +89,9 @@ func (p *Project) basePath() (basePath string, err error) {
 	return
 }
 
-func (p *Project) makeFiles(dir string, files map[string]string, tmplConfig config.Template) error {
+func (p *Project) makeFiles(dir string, files map[string]string) error {
+	data := template.NewData(p.moduleName, p.appName, p.commandName)
+
 	for fileName, tmplFileName := range files {
 		if err := func() error {
 			file, err := os.Create(filepath.Join(dir, fileName))
@@ -99,12 +100,10 @@ func (p *Project) makeFiles(dir string, files map[string]string, tmplConfig conf
 			}
 			defer file.Close()
 
-			tmpl, err := template.New(tmplConfig, tmplFileName)
+			tmpl, err := template.New(p.loader.LoadTemplateConfig(), tmplFileName)
 			if err != nil {
 				return err
 			}
-
-			data := template.NewData(p.moduleName, p.appName, p.commandName)
 			if err := tmpl.Execute(file, *data); err != nil {
 				return err
 			}
@@ -112,14 +111,6 @@ func (p *Project) makeFiles(dir string, files map[string]string, tmplConfig conf
 		}(); err != nil {
 			return err
 		}
-	}
-	return nil
-}
-
-// createDirectory ensures the directory exists.
-func createDirectory(dir string) error {
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 	return nil
 }
