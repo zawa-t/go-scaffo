@@ -100,7 +100,7 @@ func (p *Project) makeFiles(dir string, files map[string]string) error {
 			}
 			defer file.Close()
 
-			tmpl, err := template.New(p.loader.LoadTemplateConfig(), tmplFileName)
+			tmpl, err := template.New(tmplFileName, p.loader.LoadTemplateConfig())
 			if err != nil {
 				return err
 			}

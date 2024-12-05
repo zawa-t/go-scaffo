@@ -39,7 +39,7 @@ type Template struct {
 	template *template.Template
 }
 
-func New(tmplConfig config.Template, tmplFileName string) (*Template, error) {
+func New(tmplFileName string, tmplConfig config.Template) (*Template, error) {
 	funcMap := template.FuncMap{
 		"capitalizeFirst": CapitalizeFirst,
 	}
