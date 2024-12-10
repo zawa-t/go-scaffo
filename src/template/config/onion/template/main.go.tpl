@@ -4,12 +4,12 @@ import (
 	"log"
 	"net/http"
 
-	"{{ .BaseImportPath }}/internal/dependency"
+	"{{ .BaseImportPath }}/internal/injection"
 	"{{ .BaseImportPath }}/internal/presentation"
 )
 
 func main() {
-	di := dependency.NewInjection().NewAppHandler()
+	di := injection.NewDependency()
 
 	presentation.NewRouter(di)
 
